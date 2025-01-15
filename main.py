@@ -14,10 +14,18 @@ media_object =medias[0]
  
 media_id = media_object.id
 comment_count =media_object.comment_count
-commments =cl.media_comments(media_id,comment_count)
+comments =cl.media_comments(media_id,comment_count)
 
-for comment in commments:
-    print("Comment inserted!")
+comment_list =[]
 
-    with open ('comments.json','w') as comments :
-        json.dump(f"{comment.text}\n",comments)
+for comment in comments:
+    comment_text=comment.text
+    comment_text.rstrip()
+    comment_list.append(comment_text)
+    print("Comments appened!")
+
+
+for comment in comment_list:
+    with open ('comments.json','a') as comments :
+        json.dump(comment,comments,indent=4)
+        comments.write("\n")
