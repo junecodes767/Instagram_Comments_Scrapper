@@ -1,67 +1,64 @@
 from instagrapi import Client
 import os
 import json
+import time
+from instagrapi.exceptions import LoginRequired
 
-username=os.getenv("NAME") 
-password=os.getenv("PASSWORD")
+
+username=os.getenv("USER_NAME") 
+password=os.getenv("PASS_WORD") 
 cl = Client() # instagram object
 
-#login to api
-cl.login(username, password)
+# Attempt to load session settings from a file
+session_file = "session.json"
+if os.path.exists(session_file):
+    try:
+        cl.load_settings(session_file)
+    except Exception as e:
+        print("Session file is invalid, logging in again.")
+        cl.login(username, password)
+        cl.dump_settings(session_file)
+else:
+    
+    cl.login(username, password)
+    cl.dump_settings(session_file)
 
 #used to access the clients fitness account
-user_id = cl.user_id_from_username("growwithjo")
+user_id = cl.user_id_from_username("trainwithjoan")
 
 #list that contains the id of the each post
-last_ten_post=[]
+last_ten_post_id=[]
 
 #accesses the last three posts from the clients fitness account
-medias = cl.user_medias(user_id, 3)
+medias = cl.user_medias(user_id, 10)
 
-#post number 1
-media_object =medias[0]
+#loops through 10 media post and appends id and object to list in the form of a tuple
+for i,media_obj in enumerate(medias):
+    t_media= media_obj,media_obj.id
+    last_ten_post_id.append(t_media)
+    
+for index, (post, post_id) in enumerate(last_ten_post_id):
+    #number of comments for that post
+    comment_count =post.comment_count
 
-#post number 1 media id
-mo_id =media_object.id
-last_ten_post.append(mo_id) #appends to list
+    #list of comments for a given post
+    comments =cl.media_comments(post_id,comment_count)
 
-#post number 2
-media_object_2 =medias[1]
-
-#post number 2 media id
-mo_id_2 = media_object_2.id
-last_ten_post.append(mo_id_2) #appends to list
-
-#post number 3
-media_object_3 =medias[2]
-
-#post number 3 media id
-mo_id_3 =media_object_3.id
-last_ten_post.append(mo_id_3) #appends to list
-
- 
- 
-for ids in last_ten_post:
-    print(ids)
- 
-
-#list that contains the media id of 10 posts
+#Extract comments into the list
+    comment_list =[ comment.text for comment in comments]
+    
+    file_name = f"media_post{index+1}.json"
 
 
-# media_id = media_object.id
-# comment_count =media_object.comment_count
-# comments =cl.media_comments(media_id,comment_count)
-
-# comment_list =[]
-
-# for comment in comments:
-#     comment_text=comment.text
-#     comment_text.rstrip()
-#     comment_list.append(comment_text)
-#     print("Comments appened!")
-
-
-# for comment in comment_list:
-#     with open ('comments.json','a') as comments :
-#         json.dump(comment,comments,indent=4)
-#         comments.write("\n")
+    # Check if the file exists; if not, create and write comments
+    if not os.path.exists(file_name):
+        with open(file_name, 'w') as file:
+            json.dump(comment_list, file, indent=4)
+    else:
+        # If the file exists, append new comments
+        with open(file_name, 'r+') as file:
+            existing_comments = json.load(file)
+            existing_comments.extend(comment_list)
+            file.seek(0)
+            json.dump(existing_comments, file, indent=4)      
+time.sleep(120)  
